@@ -2,7 +2,6 @@ facts:
   fact_sales:
     grain:
       - OrderID
-      - ProductID
     measures:
       - Quantity
       - TotalAmount
