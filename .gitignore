@@ -22,7 +22,7 @@ ollama/
 output/*.sql
 output/*.md
 
-# Metadata (opcjonalnie, jeśli generowane automatycznie)
-metadata/*.yml
+# Generated metadata only (do not version)
+metadata/generated/*.yml
 
 # CI/CD temp files# CI/CD temp files
