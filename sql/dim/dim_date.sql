@@ -1,5 +1,5 @@
--- Dimension: Date
--- Status: intentionally deferred
--- Rationale:
--- Date dimension will be generated later as a calendar table
--- (either in SQL or Power BI) to avoid premature complexity.
+CREATE OR REPLACE VIEW dim_date AS
+SELECT DISTINCT
+    sd.OrderDate AS order_date
+FROM sales_data sd
+WHERE sd.OrderDate IS NOT NULL;
