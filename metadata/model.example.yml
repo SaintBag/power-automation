@@ -1,3 +1,4 @@
+# trigger semantic validation ci
 facts:
   fact_sales:
     grain:
