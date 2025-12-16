@@ -68,12 +68,32 @@ def validate_fact_foreign_keys(model: dict):
                     f"fact '{fact_name}' foreign key '{fk}' "
                     f"does not match any dimension key"
                 )
+                
+def validate_no_many_to_many(model: dict):
+    dimensions = model.get("dimensions", {})
+
+    key_usage = {}
+
+    for dim_name, dim_def in dimensions.items():
+        key = dim_def.get("key")
+        if not key:
+            continue
+
+        key_usage.setdefault(key, []).append(dim_name)
+
+    for key, dims in key_usage.items():
+        if len(dims) > 1:
+            fail(
+                f"many-to-many detected: key '{key}' "
+                f"is used by multiple dimensions: {dims}"
+            )
 
 def main():
     model = load_model(MODEL_PATH)
     validate_facts(model)
     validate_dimensions(model)
     validate_fact_foreign_keys(model)
+    validate_no_many_to_many(model)
     pass_validation()
 
 if __name__ == "__main__":
