@@ -1,0 +1,5 @@
+-- Dimension: Date
+-- Status: intentionally deferred
+-- Rationale:
+-- Date dimension will be generated later as a calendar table
+-- (either in SQL or Power BI) to avoid premature complexity.
