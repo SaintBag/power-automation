@@ -68,7 +68,7 @@ def validate_fact_foreign_keys(model: dict):
                     f"fact '{fact_name}' foreign key '{fk}' "
                     f"does not match any dimension key"
                 )
-                
+
 def validate_no_many_to_many(model: dict):
     dimensions = model.get("dimensions", {})
 
@@ -88,12 +88,26 @@ def validate_no_many_to_many(model: dict):
                 f"is used by multiple dimensions: {dims}"
             )
 
+def validate_grain_vs_foreign_keys(model: dict):
+    facts = model.get("facts", {})
+
+    for fact_name, fact_def in facts.items():
+        grain = set(fact_def.get("grain", []))
+        foreign_keys = set(fact_def.get("foreign_keys", []))
+
+        overlap = grain.intersection(foreign_keys)
+        if overlap:
+            fail(
+                f"fact '{fact_name}' has foreign keys in grain: {sorted(overlap)}"
+            )
+
 def main():
     model = load_model(MODEL_PATH)
     validate_facts(model)
     validate_dimensions(model)
     validate_fact_foreign_keys(model)
     validate_no_many_to_many(model)
+    validate_grain_vs_foreign_keys(model)
     pass_validation()
 
 if __name__ == "__main__":
