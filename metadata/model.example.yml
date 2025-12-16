@@ -1,0 +1,28 @@
+facts:
+  fact_sales:
+    grain:
+      - OrderID
+      - ProductID
+    measures:
+      - Quantity
+      - TotalAmount
+    foreign_keys:
+      - CustomerID
+      - ProductID
+      - OrderDate
+
+dimensions:
+  dim_customer:
+    key: CustomerID
+    grain:
+      - CustomerID
+
+  dim_product:
+    key: ProductID
+    grain:
+      - ProductID
+
+  dim_date:
+    key: OrderDate
+    grain:
+      - OrderDate
