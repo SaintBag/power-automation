@@ -5,12 +5,14 @@ on:
     paths:
       - "metadata/**"
       - "scripts/**"
+      - "sql/**"
   push:
     branches:
       - main
     paths:
       - "metadata/**"
       - "scripts/**"
+      - "sql/**"
 
 jobs:
   validate-semantic-model:
