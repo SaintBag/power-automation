@@ -106,6 +106,32 @@ def validate_grain_vs_foreign_keys(model: dict):
                 f"fact '{fact_name}' has foreign keys in grain: {sorted(overlap)}"
             )
 
+def validate_fact_grain_vs_sql(model: dict):
+    facts = model.get("facts", {})
+
+    for fact_name, fact_def in facts.items():
+        grain = fact_def.get("grain", [])
+        if not grain:
+            continue  # grain already validated elsewhere
+
+        sql_path = f"sql/fact/{fact_name}.sql"
+        if not os.path.exists(sql_path):
+            fail(f"missing SQL file for fact: {sql_path}")
+
+        try:
+            with open(sql_path, "r") as f:
+                sql_content = f.read().lower()
+        except OSError as e:
+            fail(f"cannot read SQL file {sql_path}: {e}")
+
+        for grain_col in grain:
+            token = grain_col.lower()
+            if token not in sql_content:
+                fail(
+                    f"fact '{fact_name}' grain column '{grain_col}' "
+                    f"not found in SQL definition"
+                )
+
 def validate_no_many_to_many(model: dict):
     """
     Ensures that a single dimension key
@@ -127,6 +153,82 @@ def validate_no_many_to_many(model: dict):
                 f"many-to-many detected: key '{key}' "
                 f"is used by multiple dimensions: {dims}"
             )
+
+def validate_fact_foreign_keys_vs_sql(model: dict):
+    facts = model.get("facts", {})
+
+    for fact_name, fact_def in facts.items():
+        foreign_keys = fact_def.get("foreign_keys", [])
+        if not foreign_keys:
+            continue
+
+        sql_path = f"sql/fact/{fact_name}.sql"
+        if not os.path.exists(sql_path):
+            fail(f"missing SQL file for fact: {sql_path}")
+
+        try:
+            with open(sql_path, "r") as f:
+                sql_content = f.read().lower()
+        except OSError as e:
+            fail(f"cannot read SQL file {sql_path}: {e}")
+
+        for fk in foreign_keys:
+            token = fk.lower()
+            if token not in sql_content:
+                fail(
+                    f"fact '{fact_name}' foreign key '{fk}' "
+                    f"not found in SQL definition"
+                )
+
+def validate_fact_measures_vs_sql(model: dict):
+    facts = model.get("facts", {})
+
+    aggregations = ["sum(", "count(", "avg(", "min(", "max("]
+
+    for fact_name, fact_def in facts.items():
+        measures = fact_def.get("measures", [])
+        grain = set(fact_def.get("grain", []))
+        foreign_keys = set(fact_def.get("foreign_keys", []))
+
+        if not measures:
+            continue
+
+        sql_path = f"sql/fact/{fact_name}.sql"
+        if not os.path.exists(sql_path):
+            fail(f"missing SQL file for fact: {sql_path}")
+
+        try:
+            with open(sql_path, "r") as f:
+                sql_content = f.read().lower()
+        except OSError as e:
+            fail(f"cannot read SQL file {sql_path}: {e}")
+
+        for measure in measures:
+            token = measure.lower()
+
+            if token not in sql_content:
+                fail(
+                    f"fact '{fact_name}' measure '{measure}' "
+                    f"not found in SQL definition"
+                )
+
+            if measure in grain:
+                fail(
+                    f"fact '{fact_name}' measure '{measure}' "
+                    f"is part of grain — invalid fact design"
+                )
+
+            if measure in foreign_keys:
+                fail(
+                    f"fact '{fact_name}' measure '{measure}' "
+                    f"is also a foreign key — invalid fact design"
+                )
+
+            if not any(agg in sql_content for agg in aggregations):
+                fail(
+                    f"fact '{fact_name}' measure '{measure}' "
+                    f"is not aggregated in SQL"
+                )
 
 # ---------- SQL CONTRACT VALIDATION ----------
 
@@ -173,6 +275,9 @@ def main():
     validate_fact_foreign_keys(model)
     validate_grain_vs_foreign_keys(model)
     validate_no_many_to_many(model)
+    validate_fact_grain_vs_sql(model)
+    validate_fact_foreign_keys_vs_sql(model)
+    validate_fact_measures_vs_sql(model)
     validate_sql_files_exist(model)
     validate_sql_view_names(model)
     pass_validation()
