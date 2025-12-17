@@ -15,4 +15,4 @@ GROUP BY
     sd.OrderID,
     sd.CustomerID,
     sd.ProductID,
-    sd.OrderDate;
+

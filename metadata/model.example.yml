@@ -2,27 +2,33 @@
 facts:
   fact_sales:
     grain:
-      - OrderID
+      - order_id
     measures:
-      - Quantity
-      - TotalAmount
+      - quantity
+      - total_amount
     foreign_keys:
-      - CustomerID
-      - ProductID
-      - OrderDate
+      - customer_id
+      - product_id
+      - order_date
+    attributes: []
 
 dimensions:
   dim_customer:
-    key: CustomerID
+    key: customer_id
     grain:
-      - CustomerID
+      - customer_id
+    attributes:
+      - customer_name
+      - region
 
   dim_product:
-    key: ProductID
+    key: product_id
     grain:
-      - ProductID
+      - product_id
+    attributes:
+      - product_name
 
   dim_date:
-    key: OrderDate
+    key: order_date
     grain:
-      - OrderDate
+      - order_date
