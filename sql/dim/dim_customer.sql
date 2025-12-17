@@ -5,4 +5,3 @@ SELECT DISTINCT
     sd.Region       AS region
 FROM sales_data sd
 WHERE sd.CustomerID IS NOT NULL;
-
