@@ -106,6 +106,32 @@ def validate_grain_vs_foreign_keys(model: dict):
                 f"fact '{fact_name}' has foreign keys in grain: {sorted(overlap)}"
             )
 
+def validate_fact_grain_vs_sql(model: dict):
+    facts = model.get("facts", {})
+
+    for fact_name, fact_def in facts.items():
+        grain = fact_def.get("grain", [])
+        if not grain:
+            continue  # grain already validated elsewhere
+
+        sql_path = f"sql/fact/{fact_name}.sql"
+        if not os.path.exists(sql_path):
+            fail(f"missing SQL file for fact: {sql_path}")
+
+        try:
+            with open(sql_path, "r") as f:
+                sql_content = f.read().lower()
+        except OSError as e:
+            fail(f"cannot read SQL file {sql_path}: {e}")
+
+        for grain_col in grain:
+            token = grain_col.lower()
+            if token not in sql_content:
+                fail(
+                    f"fact '{fact_name}' grain column '{grain_col}' "
+                    f"not found in SQL definition"
+                )
+
 def validate_no_many_to_many(model: dict):
     """
     Ensures that a single dimension key
@@ -173,6 +199,7 @@ def main():
     validate_fact_foreign_keys(model)
     validate_grain_vs_foreign_keys(model)
     validate_no_many_to_many(model)
+    validate_fact_grain_vs_sql(model)
     validate_sql_files_exist(model)
     validate_sql_view_names(model)
     pass_validation()
