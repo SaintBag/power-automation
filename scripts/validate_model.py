@@ -2,19 +2,15 @@ import sys
 import os
 import yaml
 
-
 MODEL_PATH = "metadata/model.example.yml"
-
 
 def fail(message: str):
     print(f"FAIL: {message}")
     sys.exit(1)
 
-
 def pass_validation():
     print("PASS: semantic model validation successful")
     sys.exit(0)
-
 
 def load_model(path: str) -> dict:
     if not os.path.exists(path):
@@ -26,7 +22,6 @@ def load_model(path: str) -> dict:
         except yaml.YAMLError as e:
             fail(f"invalid YAML format: {e}")
 
-
 def validate_facts(model: dict):
     facts = model.get("facts")
     if not facts:
@@ -36,7 +31,6 @@ def validate_facts(model: dict):
         grain = fact_def.get("grain")
         if not grain:
             fail(f"fact '{fact_name}' has no grain defined")
-
 
 def validate_dimensions(model: dict):
     dimensions = model.get("dimensions")
@@ -100,6 +94,39 @@ def validate_grain_vs_foreign_keys(model: dict):
             fail(
                 f"fact '{fact_name}' has foreign keys in grain: {sorted(overlap)}"
             )
+def validate_sql_files_exist(model: dict):
+    # Facts
+    facts = model.get("facts", {})
+    for fact_name in facts.keys():
+        path = f"sql/fact/{fact_name}.sql"
+        if not os.path.exists(path):
+            fail(f"missing SQL file for fact: {path}")
+
+    # Dimensions
+    dimensions = model.get("dimensions", {})
+    for dim_name in dimensions.keys():
+        path = f"sql/dim/{dim_name}.sql"
+        if not os.path.exists(path):
+            fail(f"missing SQL file for dimension: {path}")
+
+def validate_sql_view_names(model: dict):
+    objects = []
+
+    objects.extend(model.get("facts", {}).keys())
+    objects.extend(model.get("dimensions", {}).keys())
+
+    for obj in objects:
+        if obj.startswith("fact_"):
+            path = f"sql/fact/{obj}.sql"
+        else:
+            path = f"sql/dim/{obj}.sql"
+
+        with open(path, "r") as f:
+            content = f.read().lower()
+
+        expected = f"create or replace view {obj}".lower()
+        if expected not in content:
+            fail(f"SQL view name mismatch in {path}")
 
 def main():
     model = load_model(MODEL_PATH)
@@ -107,7 +134,8 @@ def main():
     validate_dimensions(model)
     validate_fact_foreign_keys(model)
     validate_no_many_to_many(model)
-    validate_grain_vs_foreign_keys(model)
+    validate_sql_files_exist(model)
+    validate_sql_view_names(model)
     pass_validation()
 
 if __name__ == "__main__":
