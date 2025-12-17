@@ -154,6 +154,33 @@ def validate_no_many_to_many(model: dict):
                 f"is used by multiple dimensions: {dims}"
             )
 
+def validate_fact_foreign_keys_vs_sql(model: dict):
+    facts = model.get("facts", {})
+
+    for fact_name, fact_def in facts.items():
+        foreign_keys = fact_def.get("foreign_keys", [])
+        if not foreign_keys:
+            continue
+
+        sql_path = f"sql/fact/{fact_name}.sql"
+        if not os.path.exists(sql_path):
+            fail(f"missing SQL file for fact: {sql_path}")
+
+        try:
+            with open(sql_path, "r") as f:
+                sql_content = f.read().lower()
+        except OSError as e:
+            fail(f"cannot read SQL file {sql_path}: {e}")
+
+        for fk in foreign_keys:
+            token = fk.lower()
+            if token not in sql_content:
+                fail(
+                    f"fact '{fact_name}' foreign key '{fk}' "
+                    f"not found in SQL definition"
+                )
+
+
 # ---------- SQL CONTRACT VALIDATION ----------
 
 def validate_sql_files_exist(model: dict):
@@ -200,6 +227,7 @@ def main():
     validate_grain_vs_foreign_keys(model)
     validate_no_many_to_many(model)
     validate_fact_grain_vs_sql(model)
+    validate_fact_foreign_keys_vs_sql(model)
     validate_sql_files_exist(model)
     validate_sql_view_names(model)
     pass_validation()
