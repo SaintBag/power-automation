@@ -1,6 +1,7 @@
 import sys
 import os
 import yaml
+import re
 
 MODEL_PATH = "metadata/model.example.yml"
 
@@ -58,23 +59,24 @@ def validate_fact_foreign_keys(model: dict):
     dimensions = model.get("dimensions", {})
 
     for fact_name, fact_def in facts.items():
-        fact_grain = set(fact_def.get("grain", []))
+        fact_grain = {g.lower() for g in fact_def.get("grain", [])}
         foreign_keys = fact_def.get("foreign_keys")
 
-    if not foreign_keys:
-        fail(f"fact '{fact_name}' defines no foreign_keys")
+        if not foreign_keys:
+            fail(f"fact '{fact_name}' defines no foreign_keys")
 
-    if not isinstance(foreign_keys, list):
-        fail(
-        f"fact '{fact_name}' foreign_keys must be a list, "
-        f"got {type(foreign_keys).__name__}"
-    )
+        if not isinstance(foreign_keys, list):
+            fail(
+                f"fact '{fact_name}' foreign_keys must be a list, "
+                f"got {type(foreign_keys).__name__}"
+            )
 
         for fk in foreign_keys:
+            fk_lower = fk.lower()
             matching_dims = [
                 dim_name
                 for dim_name, dim_def in dimensions.items()
-                if dim_def.get("key") == fk
+                if dim_def.get("key", "").lower() == fk_lower
             ]
 
             if matching_dims:
@@ -84,7 +86,7 @@ def validate_fact_foreign_keys(model: dict):
                         f"maps to multiple dimensions: {matching_dims}"
                     )
             else:
-                if fk not in fact_grain:
+                if fk_lower not in fact_grain:
                     fail(
                         f"foreign key '{fk}' in fact '{fact_name}' "
                         f"does not map to any dimension "
@@ -95,13 +97,11 @@ def validate_grain_vs_foreign_keys(model: dict):
     facts = model.get("facts", {})
 
     for fact_name, fact_def in facts.items():
-        grain = set(fact_def.get("grain", []))
-        foreign_keys = set(fact_def.get("foreign_keys", []))
+        grain = {g.lower() for g in fact_def.get("grain", [])}
+        foreign_keys = {fk.lower() for fk in fact_def.get("foreign_keys", [])}
 
         overlap = grain.intersection(foreign_keys)
         if overlap:
-            # Allowed ONLY if degenerate, but that is already checked above.
-            # At this stage any overlap is invalid.
             fail(
                 f"fact '{fact_name}' has foreign keys in grain: {sorted(overlap)}"
             )
@@ -112,7 +112,7 @@ def validate_fact_grain_vs_sql(model: dict):
     for fact_name, fact_def in facts.items():
         grain = fact_def.get("grain", [])
         if not grain:
-            continue  # grain already validated elsewhere
+            continue
 
         sql_path = f"sql/fact/{fact_name}.sql"
         if not os.path.exists(sql_path):
@@ -133,10 +133,6 @@ def validate_fact_grain_vs_sql(model: dict):
                 )
 
 def validate_no_many_to_many(model: dict):
-    """
-    Ensures that a single dimension key
-    is not reused across multiple dimensions.
-    """
     dimensions = model.get("dimensions", {})
     key_usage = {}
 
@@ -145,7 +141,8 @@ def validate_no_many_to_many(model: dict):
         if not key:
             continue
 
-        key_usage.setdefault(key, []).append(dim_name)
+        key_lower = key.lower()
+        key_usage.setdefault(key_lower, []).append(dim_name)
 
     for key, dims in key_usage.items():
         if len(dims) > 1:
@@ -187,8 +184,8 @@ def validate_fact_measures_vs_sql(model: dict):
 
     for fact_name, fact_def in facts.items():
         measures = fact_def.get("measures", [])
-        grain = set(fact_def.get("grain", []))
-        foreign_keys = set(fact_def.get("foreign_keys", []))
+        grain = {g.lower() for g in fact_def.get("grain", [])}
+        foreign_keys = {fk.lower() for fk in fact_def.get("foreign_keys", [])}
 
         if not measures:
             continue
@@ -212,13 +209,13 @@ def validate_fact_measures_vs_sql(model: dict):
                     f"not found in SQL definition"
                 )
 
-            if measure in grain:
+            if token in grain:
                 fail(
                     f"fact '{fact_name}' measure '{measure}' "
                     f"is part of grain — invalid fact design"
                 )
 
-            if measure in foreign_keys:
+            if token in foreign_keys:
                 fail(
                     f"fact '{fact_name}' measure '{measure}' "
                     f"is also a foreign key — invalid fact design"
@@ -228,6 +225,78 @@ def validate_fact_measures_vs_sql(model: dict):
                 fail(
                     f"fact '{fact_name}' measure '{measure}' "
                     f"is not aggregated in SQL"
+                )
+
+def extract_sql_columns(sql: str) -> list[str]:
+    select_match = re.search(
+        r"select\s+(.*?)\s+from",
+        sql,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not select_match:
+        return []
+
+    columns_block = select_match.group(1)
+
+    columns = []
+    for line in columns_block.split(","):
+        line = line.strip()
+        if " as " in line.lower():
+            alias = line.split()[-1]
+            columns.append(alias)
+        else:
+            columns.append(line.split(".")[-1])
+
+    return [c.strip() for c in columns]
+
+def validate_fact_attributes(model: dict):
+    facts = model.get("facts", {})
+
+    for fact_name, fact_def in facts.items():
+        path = f"sql/fact/{fact_name}.sql"
+        if not os.path.exists(path):
+            fail(f"missing SQL file for fact: {path}")
+
+        with open(path) as f:
+            sql = f.read()
+
+        sql_columns = [c.lower() for c in extract_sql_columns(sql)]
+        allowed = {c.lower() for c in (
+            fact_def.get("grain", [])
+            + fact_def.get("foreign_keys", [])
+            + fact_def.get("measures", [])
+            + fact_def.get("attributes", [])
+        )}
+
+        for col in sql_columns:
+            if col not in allowed:
+                fail(
+                    f"fact '{fact_name}' has undeclared column '{col}' "
+                    f"in SQL view (allowed: {sorted(allowed)})"
+                )
+
+def validate_dimension_attributes(model: dict):
+    dimensions = model.get("dimensions", {})
+
+    for dim_name, dim_def in dimensions.items():
+        path = f"sql/dim/{dim_name}.sql"
+        if not os.path.exists(path):
+            fail(f"missing SQL file for dimension: {path}")
+
+        with open(path) as f:
+            sql = f.read()
+
+        sql_columns = [c.lower() for c in extract_sql_columns(sql)]
+        allowed = {c.lower() for c in (
+            [dim_def.get("key")]
+            + dim_def.get("attributes", [])
+        )}
+
+        for col in sql_columns:
+            if col not in allowed:
+                fail(
+                    f"dimension '{dim_name}' has undeclared column '{col}' "
+                    f"in SQL view (allowed: {sorted(allowed)})"
                 )
 
 # ---------- SQL CONTRACT VALIDATION ----------
@@ -270,16 +339,31 @@ def validate_sql_view_names(model: dict):
 
 def main():
     model = load_model(MODEL_PATH)
+
+    # 1. SQL filesystem contract
+    validate_sql_files_exist(model)
+
+    # 2. Core semantic structure
     validate_facts(model)
     validate_dimensions(model)
+
+    # 3. Relational semantics
     validate_fact_foreign_keys(model)
     validate_grain_vs_foreign_keys(model)
     validate_no_many_to_many(model)
+
+    # 4. SQL naming & relational alignment
+    validate_sql_view_names(model)
     validate_fact_grain_vs_sql(model)
     validate_fact_foreign_keys_vs_sql(model)
+
+    # 5. Measures semantics
     validate_fact_measures_vs_sql(model)
-    validate_sql_files_exist(model)
-    validate_sql_view_names(model)
+
+    # 6. Attribute contract (strictest)
+    validate_fact_attributes(model)
+    validate_dimension_attributes(model)
+
     pass_validation()
 
 if __name__ == "__main__":
