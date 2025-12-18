@@ -3,15 +3,18 @@ name: Semantic Model Validation
 on:
   pull_request:
     paths:
-      - "metadata/**"
-      - "scripts/**"
+      - "schema/**"
+      - "semantic/**"
+      - "validation/**"
       - "sql/**"
+
   push:
     branches:
       - main
     paths:
-      - "metadata/**"
-      - "scripts/**"
+      - "schema/**"
+      - "semantic/**"
+      - "validation/**"
       - "sql/**"
 
 jobs:
@@ -31,7 +34,7 @@ jobs:
         run: |
           pip install pyyaml
 
-      - name: Run semantic model validator (default model)
+      - name: Run semantic model validator
         run: |
           python validation/engine.py
 
