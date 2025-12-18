@@ -5,7 +5,7 @@ import re
 
 MODEL_PATH = os.environ.get(
     "MODEL_PATH",
-    "metadata/model.example.yml"
+    "semantic/model.yml"
 )
 
 # ---------- CORE HELPERS ----------
