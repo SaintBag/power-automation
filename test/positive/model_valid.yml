@@ -1,0 +1,34 @@
+# trigger semantic validation ci
+facts:
+  fact_sales:
+    grain:
+      - order_id
+    measures:
+      - quantity
+      - total_amount
+    foreign_keys:
+      - customer_id
+      - product_id
+      - order_date
+    attributes: []
+
+dimensions:
+  dim_customer:
+    key: customer_id
+    grain:
+      - customer_id
+    attributes:
+      - customer_name
+      - region
+
+  dim_product:
+    key: product_id
+    grain:
+      - product_id
+    attributes:
+      - product_name
+
+  dim_date:
+    key: order_date
+    grain:
+      - order_date
