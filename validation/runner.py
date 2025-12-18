@@ -2,8 +2,12 @@ import os
 import subprocess
 import sys
 
-VALIDATOR_PATH = "scripts/validate_model.py"
-TEST_ROOT = "test"
+VALIDATOR_PATH = "validation/engine.py"
+
+# ---------- PATH CONTRACT ----------
+TEST_ROOT = "validation/tests"
+POSITIVE_DIR = f"{TEST_ROOT}/positive"
+NEGATIVE_DIR = f"{TEST_ROOT}/negative"
 
 
 def run_test(model_path: str) -> int:
@@ -11,7 +15,7 @@ def run_test(model_path: str) -> int:
     env["MODEL_PATH"] = model_path
 
     result = subprocess.run(
-    [sys.executable, VALIDATOR_PATH],
+        [sys.executable, VALIDATOR_PATH],
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -32,17 +36,14 @@ def main():
 
     tests = []
 
-    for root, _, files in os.walk(TEST_ROOT):
-        for file in files:
+    # iterate explicitly over positive/negative dirs
+    for root in (POSITIVE_DIR, NEGATIVE_DIR):
+        if not os.path.isdir(root):
+            continue
+        for file in os.listdir(root):
             if file.endswith(".yml"):
                 full_path = os.path.join(root, file)
-                if "positive" in root:
-                    expected = 0
-                elif "negative" in root:
-                    expected = 1
-                else:
-                    continue
-
+                expected = 0 if "positive" in root else 1
                 tests.append((full_path, expected))
 
     if not tests:
@@ -69,6 +70,7 @@ def main():
 
     print("All tests behaved as expected.")
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

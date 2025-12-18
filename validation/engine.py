@@ -5,8 +5,13 @@ import re
 
 MODEL_PATH = os.environ.get(
     "MODEL_PATH",
-    "metadata/model.example.yml"
+    "semantic/model.yml"
 )
+
+# ---------- REFACTORED PATH CONSTANTS ----------
+
+FACT_SQL_DIR = "sql/facts"
+DIM_SQL_DIR = "sql/dimensions"
 
 # ---------- CORE HELPERS ----------
 
@@ -117,7 +122,7 @@ def validate_fact_grain_vs_sql(model: dict):
         if not grain:
             continue
 
-        sql_path = f"sql/fact/{fact_name}.sql"
+        sql_path = f"{FACT_SQL_DIR}/{fact_name}.sql"
         if not os.path.exists(sql_path):
             fail(f"missing SQL file for fact: {sql_path}")
 
@@ -162,7 +167,7 @@ def validate_fact_foreign_keys_vs_sql(model: dict):
         if not foreign_keys:
             continue
 
-        sql_path = f"sql/fact/{fact_name}.sql"
+        sql_path = f"{FACT_SQL_DIR}/{fact_name}.sql"
         if not os.path.exists(sql_path):
             fail(f"missing SQL file for fact: {sql_path}")
 
@@ -193,7 +198,7 @@ def validate_fact_measures_vs_sql(model: dict):
         if not measures:
             continue
 
-        sql_path = f"sql/fact/{fact_name}.sql"
+        sql_path = f"{FACT_SQL_DIR}/{fact_name}.sql"
         if not os.path.exists(sql_path):
             fail(f"missing SQL file for fact: {sql_path}")
 
@@ -256,7 +261,7 @@ def validate_fact_attributes(model: dict):
     facts = model.get("facts", {})
 
     for fact_name, fact_def in facts.items():
-        path = f"sql/fact/{fact_name}.sql"
+        path = f"{FACT_SQL_DIR}/{fact_name}.sql"
         if not os.path.exists(path):
             fail(f"missing SQL file for fact: {path}")
 
@@ -282,7 +287,7 @@ def validate_dimension_attributes(model: dict):
     dimensions = model.get("dimensions", {})
 
     for dim_name, dim_def in dimensions.items():
-        path = f"sql/dim/{dim_name}.sql"
+        path = f"{DIM_SQL_DIR}/{dim_name}.sql"
         if not os.path.exists(path):
             fail(f"missing SQL file for dimension: {path}")
 
@@ -307,13 +312,13 @@ def validate_dimension_attributes(model: dict):
 def validate_sql_files_exist(model: dict):
     facts = model.get("facts", {})
     for fact_name in facts.keys():
-        path = f"sql/fact/{fact_name}.sql"
+        path = f"{FACT_SQL_DIR}/{fact_name}.sql"
         if not os.path.exists(path):
             fail(f"missing SQL file for fact: {path}")
 
     dimensions = model.get("dimensions", {})
     for dim_name in dimensions.keys():
-        path = f"sql/dim/{dim_name}.sql"
+        path = f"{DIM_SQL_DIR}/{dim_name}.sql"
         if not os.path.exists(path):
             fail(f"missing SQL file for dimension: {path}")
 
@@ -324,9 +329,9 @@ def validate_sql_view_names(model: dict):
 
     for obj in objects:
         if obj.startswith("fact_"):
-            path = f"sql/fact/{obj}.sql"
+            path = f"{FACT_SQL_DIR}/{obj}.sql"
         else:
-            path = f"sql/dim/{obj}.sql"
+            path = f"{DIM_SQL_DIR}/{obj}.sql"
 
         if not os.path.exists(path):
             fail(f"SQL file not found for view name validation: {path}")
