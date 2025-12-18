@@ -103,7 +103,6 @@ Expected failure stage:
 
 Each test is executed by overriding the model path:
 
-```bash
 MODEL_PATH=tests/positive/model_valid.yml python3 scripts/validate_model.py
 MODEL_PATH=tests/negative/foreign_key_without_dimension.yml python3 scripts/validate_model.py
 MODEL_PATH=tests/negative/measure_without_aggregation.yml python3 scripts/validate_model.py
@@ -121,5 +120,69 @@ data quality checks.
 The scope is strictly limited to semantic model contract validation.
 
 
+---
+
+## Automated Test Runner
+
+### Purpose
+
+The automated test runner executes all semantic model validation tests
+defined under the `test/` directory and verifies their expected outcome.
+
+It is designed to be:
+- deterministic
+- framework-free
+- CI-friendly
+
+---
+
+### Running Tests Locally
+
+From the repository root:
+
+```bash
+python3 scripts/run_tests.py
 
 
+```
+Exit codes:
+0 — all tests behaved as expected
+1 — at least one test produced an unexpected result
+
+---
+
+## Adding New Test Cases
+
+### Positive Test
+
+Place valid semantic model definitions under:
+
+```bash
+test/positive/
+```
+Rules:
+- the validator must PASS
+- exit code 0 is expected
+
+### Negative Tests
+
+Negative Tests
+
+```bash
+test/negative/
+```
+
+Rules:
+- the validator must FAIL
+- non-zero exit code is expected
+
+Each test case is a standalone YAML file.
+No SQL or metadata files are modified during test execution.
+
+---
+
+## Design Notes
+
+- the validator engine is treated as a black box
+- test execution is driven exclusively via MODEL_PATH
+- no external dependencies or test frameworks are used
