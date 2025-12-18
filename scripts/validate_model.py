@@ -3,7 +3,10 @@ import os
 import yaml
 import re
 
-MODEL_PATH = "metadata/model.example.yml"
+MODEL_PATH = os.environ.get(
+    "MODEL_PATH",
+    "metadata/model.example.yml"
+)
 
 # ---------- CORE HELPERS ----------
 
