@@ -1,0 +1,28 @@
+facts:
+  fact_sales:
+    grain:
+      - order_id
+    measures:
+      - quantity
+      - total_amount
+    foreign_keys:
+      - customer_id
+      - product_id
+      - non_existing_dim_id
+    attributes: []
+
+dimensions:
+  dim_customer:
+    key: customer_id
+    grain:
+      - customer_id
+    attributes:
+      - customer_name
+      - region
+
+  dim_product:
+    key: product_id
+    grain:
+      - product_id
+    attributes:
+      - product_name
