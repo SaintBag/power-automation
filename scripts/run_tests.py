@@ -30,33 +30,45 @@ def main():
         print("No test directory found.")
         sys.exit(1)
 
-    test_files = []
+    tests = []
 
     for root, _, files in os.walk(TEST_ROOT):
         for file in files:
             if file.endswith(".yml"):
-                test_files.append(os.path.join(root, file))
+                full_path = os.path.join(root, file)
+                if "positive" in root:
+                    expected = 0
+                elif "negative" in root:
+                    expected = 1
+                else:
+                    continue
 
-    if not test_files:
+                tests.append((full_path, expected))
+
+    if not tests:
         print("No test cases found.")
         sys.exit(1)
 
-    print(f"Discovered {len(test_files)} test cases\n")
+    print(f"Discovered {len(tests)} test cases\n")
 
     failures = 0
 
-    for test in sorted(test_files):
-        print(f"Running test: {test}")
-        exit_code = run_test(test)
+    for test_path, expected in sorted(tests):
+        print(f"Running test: {test_path}")
+        exit_code = run_test(test_path)
 
-        if exit_code != 0:
+        if (exit_code == 0 and expected != 0) or (exit_code != 0 and expected == 0):
+            print(f"UNEXPECTED RESULT for {test_path}")
             failures += 1
 
         print("-" * 40)
 
-    print(f"Finished. Failed tests: {failures}")
-    sys.exit(failures)
+    if failures:
+        print(f"Test run failed. Unexpected results: {failures}")
+        sys.exit(1)
 
+    print("All tests behaved as expected.")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
