@@ -5,7 +5,7 @@ import re
 
 MODEL_PATH = os.environ.get(
     "MODEL_PATH",
-    "semantic/model.yml"
+    "semantic/model.contract.yml"
 )
 
 # ---------- REFACTORED PATH CONSTANTS ----------
