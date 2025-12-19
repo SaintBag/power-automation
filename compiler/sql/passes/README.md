@@ -7,3 +7,8 @@ Each pass:
 - returns SQL IR
 - is deterministic
 - has a single responsibility
+
+## Implemented Passes
+
+- NormalizeFactQueryPass  
+  Normalizes generic SQL IR into a fact-aware SQL query structure.
