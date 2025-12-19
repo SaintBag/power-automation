@@ -18,9 +18,9 @@ venv/
 # Ollama cache (jeśli używasz lokalnie)
 ollama/
 
-# Output artifacts (finalne pliki dla Power BI)
-output/*.sql
-output/*.md
+# Output artifacts (generated-only)
+output/*
+!output/README.md
 
 # Generated metadata only (do not version)
 metadata/generated/*.yml
