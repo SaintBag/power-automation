@@ -5,13 +5,14 @@ from compiler.sql.runtime.ir import (
     SqlMeasureAggregation,
 )
 
+
 class BindMeasureAggregationPass(SqlCompilerPass):
     """
-    Binds semantic aggregation rules to fact measures.
+    Binds aggregation semantics to fact measures.
 
-    Assumes:
-    - input is SqlFactQuery
-    - default aggregation is SUM
+    Responsibilities:
+    - attach aggregation operators to measures
+    - preserve all previously inferred query semantics
     """
 
     DEFAULT_AGGREGATION = "SUM"
@@ -31,9 +32,11 @@ class BindMeasureAggregationPass(SqlCompilerPass):
         return SqlFactQuery(
             select=query.select,
             from_table=query.from_table,
+            joins=query.joins,
             group_by=query.group_by,
             grain_columns=query.grain_columns,
             foreign_keys=query.foreign_keys,
             measures=query.measures,
+            dimension_columns=query.dimension_columns,
             aggregations=aggregations,
         )

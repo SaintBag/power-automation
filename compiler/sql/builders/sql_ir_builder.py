@@ -1,35 +1,57 @@
+from typing import List
+
 from compiler.runtime.ir import SemanticModelIR
-from compiler.sql.runtime.ir import SqlQuery, SqlSelectColumn
+from compiler.sql.runtime.ir import (
+    SqlQuery,
+    SqlSelectColumn,
+)
 
 
-def build_sql_ir_from_semantic(ir: SemanticModelIR) -> list[SqlQuery]:
+def build_sql_ir_from_semantic(
+    semantic_ir: SemanticModelIR,
+) -> List[SqlQuery]:
     """
-    Translate SemanticModelIR into initial SQL IR objects.
+    Translates SemanticModelIR into initial SQL IR objects.
 
-    This function defines the explicit boundary:
-    Semantic IR -> SQL IR
+    Compiler boundary:
+        Semantic IR  →  SQL IR
 
-    No SQL rendering or optimization is performed here.
+    Responsibilities:
+    - materialize fact-level SELECT projections
+    - preserve grain semantics
+    - initialize join structure (empty at this stage)
+
+    Explicitly DOES NOT:
+    - generate joins
+    - apply aggregations
+    - render SQL
+    - infer semantics
     """
 
-    queries: list[SqlQuery] = []
+    queries: List[SqlQuery] = []
 
-    for fact_name, fact in ir.facts.items():
-        select_columns = []
+    for fact_name, fact in semantic_ir.facts.items():
+        select_columns: List[SqlSelectColumn] = []
 
-        # Grain columns
+        # --- Grain columns ---
         for column in fact.grain:
             select_columns.append(
-                SqlSelectColumn(expression=column, alias=column)
+                SqlSelectColumn(
+                    expression=column,
+                    alias=column,
+                )
             )
 
-        # Foreign keys
+        # --- Foreign keys ---
         for fk in fact.foreign_keys:
             select_columns.append(
-                SqlSelectColumn(expression=fk, alias=fk)
+                SqlSelectColumn(
+                    expression=fk,
+                    alias=fk,
+                )
             )
 
-        # Measures (no aggregation yet)
+        # --- Measures (raw, no aggregation yet) ---
         for measure in fact.measures:
             select_columns.append(
                 SqlSelectColumn(
@@ -38,12 +60,13 @@ def build_sql_ir_from_semantic(ir: SemanticModelIR) -> list[SqlQuery]:
                 )
             )
 
-        queries.append(
-            SqlQuery(
-                select=select_columns,
-                from_table=fact_name,
-                group_by=list(fact.grain),
-            )
+        query = SqlQuery(
+            select=select_columns,
+            from_table=fact_name,
+            group_by=list(fact.grain),
+            joins=[],  # ← REQUIRED by SqlQuery contract
         )
+
+        queries.append(query)
 
     return queries
