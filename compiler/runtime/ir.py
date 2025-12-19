@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Dict
 
-
 # ---------- Dimensions ----------
 
 @dataclass(frozen=True)
@@ -11,13 +10,11 @@ class Dimension:
     grain: List[str]
     attributes: List[str]
 
-
 # ---------- Facts ----------
 
 @dataclass(frozen=True)
 class Measure:
     name: str
-
 
 @dataclass(frozen=True)
 class Fact:
@@ -25,7 +22,6 @@ class Fact:
     grain: List[str]
     measures: List[Measure]
     foreign_keys: List[str]
-
 
 # ---------- Model ----------
 
