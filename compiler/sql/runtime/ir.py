@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict
 
 # ---------- SQL SELECT ----------
 
@@ -22,15 +22,28 @@ class SqlQuery:
     from_table: str
     group_by: List[str]
 
+# ---------- MEASURE AGGREGATION ----------
+
+@dataclass(frozen=True)
+class SqlMeasureAggregation:
+    """
+    Semantic definition of a measure aggregation.
+
+    Example:
+    - measure: total_amount
+    - aggregation: SUM
+    """
+    measure: str
+    aggregation: str
+
 # ---------- FACT SQL QUERY ----------
 
 @dataclass(frozen=True)
 class SqlFactQuery(SqlQuery):
     """
     Specialized SQL query representing a FACT.
-
-    Separates semantic roles explicitly.
     """
     grain_columns: List[str]
     foreign_keys: List[str]
     measures: List[str]
+    aggregations: Dict[str, SqlMeasureAggregation]

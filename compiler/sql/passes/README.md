@@ -12,3 +12,5 @@ Each pass:
 
 - NormalizeFactQueryPass  
   Normalizes generic SQL IR into a fact-aware SQL query structure.
+- BindMeasureAggregationPass  
+  Attaches deterministic aggregation semantics to fact measures.
