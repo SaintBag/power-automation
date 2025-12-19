@@ -14,3 +14,5 @@ Each pass:
   Normalizes generic SQL IR into a fact-aware SQL query structure.
 - BindMeasureAggregationPass  
   Attaches deterministic aggregation semantics to fact measures.
+- BindDimensionJoinsPass  
+  Binds dimension join and projection semantics to fact queries.
