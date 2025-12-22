@@ -24,7 +24,7 @@ class BindDimensionJoinsPass(SqlCompilerPass):
                 )
             )
 
-            dimension_columns.append(f"{dimension_table}.name")
+            dimension_columns.append(f"{dimension_table}.id")
 
         return SqlFactQuery(
             select=query.select,
