@@ -16,7 +16,7 @@ class FactQueryRenderer(SqlRenderer):
     Foundations:
     - Single SELECT
     - FROM fact table
-    - LEFT JOIN dimensions
+    - LEFT JOIN dimensions (if present)
     - GROUP BY grain columns
     """
 
@@ -42,9 +42,15 @@ class FactQueryRenderer(SqlRenderer):
     def _render_select(self) -> str:
         columns: List[str] = []
 
-        # Dimension columns
+        # Grain columns first
+        for col in self.query.grain_columns:
+            if col not in columns:
+                columns.append(col)
+
+        # Dimension columns (excluding any duplicates)
         for col in self.query.dimension_columns:
-            columns.append(col)
+            if col not in columns:
+                columns.append(col)
 
         # Aggregated measures
         for measure, aggregation in self.query.aggregations.items():
