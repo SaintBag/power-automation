@@ -7,6 +7,7 @@ from compiler.sql.builders.sql_ir_builder import build_sql_ir_from_semantic
 from compiler.sql.passes.pipeline import SqlCompilerPipeline
 from compiler.sql.passes.normalize_fact_query import NormalizeFactQueryPass
 from compiler.sql.passes.bind_measure_aggregation import BindMeasureAggregationPass
+from compiler.sql.passes.bind_dimension_joins import BindDimensionJoinsPass
 from compiler.sql.renderers.fact_renderer import FactQueryRenderer
 
 
@@ -19,7 +20,7 @@ def compile_sql() -> None:
     Orchestrates full SQL compilation from semantic model to SQL artifacts.
     """
 
-    # --- Validate semantic model (process-level gate) ---
+    # --- Validate semantic model ---
     result = subprocess.run(
         ["python3", "validation/engine.py"],
         check=False,
@@ -43,6 +44,7 @@ def compile_sql() -> None:
         passes=[
             NormalizeFactQueryPass(),
             BindMeasureAggregationPass(),
+            BindDimensionJoinsPass(semantic_ir),
         ]
     )
 
