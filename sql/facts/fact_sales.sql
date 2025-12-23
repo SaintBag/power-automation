@@ -14,5 +14,4 @@ FROM sales_data sd
 GROUP BY
     sd.OrderID,
     sd.CustomerID,
-    sd.ProductID,
-
+    sd.ProductID;
